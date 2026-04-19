@@ -1,4 +1,5 @@
 from b2t.progress import ProgressReporter
+from b2t.transcribers.funasr import build_funasr_import_error_message
 from b2t.transcribers.whisper_local import (
     WhisperProgressTqdm,
     build_whisper_import_error_message,
@@ -11,7 +12,7 @@ def test_build_whisper_import_error_message_reports_missing_install() -> None:
     )
 
     assert "Whisper support is not installed." in message
-    assert "uv sync --extra whisper --extra web" in message
+    assert "uv sync --extra funasr --extra web" in message
 
 
 def test_build_whisper_import_error_message_reports_broken_environment() -> None:
@@ -21,6 +22,15 @@ def test_build_whisper_import_error_message_reports_broken_environment() -> None
 
     assert "Whisper is installed, but the Python environment looks broken." in message
     assert ".venv" in message
+
+
+def test_build_funasr_import_error_message_reports_missing_install() -> None:
+    message = build_funasr_import_error_message(
+        funasr_available=False,
+    )
+
+    assert "Fun-ASR support is not installed." in message
+    assert "uv sync --extra funasr --extra web" in message
 
 
 def test_whisper_progress_tqdm_reports_fractional_progress() -> None:

@@ -20,6 +20,9 @@ class TqdmTaskRenderer:
             stage_label = tr(self.language, f"progress_stage_{snapshot.stage}")
             message = tr(self.language, f"progress_message_{snapshot.message}")
             description = stage_label if message == f"progress_message_{snapshot.message}" else f"{stage_label} | {message}"
+            device = str(snapshot.detail.get("device", "")).strip()
+            if device:
+                description = f"{description} [device={device}]"
 
             if snapshot.stage != self._last_stage:
                 self._bar.write(description)

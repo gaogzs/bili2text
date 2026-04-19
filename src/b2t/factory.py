@@ -5,8 +5,8 @@ from pathlib import Path
 from b2t.config import Settings
 from b2t.downloaders import YtDlpDownloader
 from b2t.pipeline import B2TPipeline
-from b2t.transcribers import LocalWhisperTranscriber
-from b2t.user_config import AppConfig
+from b2t.transcribers import FunASRTranscriber, LocalWhisperTranscriber
+from b2t.user_config import AppConfig, default_model_for_provider
 
 
 def build_pipeline(
@@ -17,7 +17,7 @@ def build_pipeline(
     model: str | None = None,
 ) -> B2TPipeline:
     selected_provider = (provider or config.default_provider).strip().lower()
-    selected_model = (model or config.default_model).strip()
+    selected_model = (model or default_model_for_provider(config, selected_provider)).strip()
 
     if selected_provider == "whisper":
         transcriber = LocalWhisperTranscriber(model=selected_model or "small")
@@ -31,6 +31,14 @@ def build_pipeline(
             model_dir=Path(model_dir_text).expanduser(),
             language=config.sensevoice.language,
             use_itn=config.sensevoice.use_itn,
+        )
+    elif selected_provider == "funasr":
+        transcriber = FunASRTranscriber(
+            model=selected_model or config.funasr.model,
+            language=config.funasr.language,
+            use_itn=config.funasr.use_itn,
+            hub=config.funasr.hub or "hf",
+            device=config.funasr.device.strip() or None,
         )
     elif selected_provider == "volcengine":
         from b2t.transcribers.volcengine import VolcengineFlashTranscriber

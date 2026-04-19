@@ -27,6 +27,7 @@
           <select name="provider" class="rounded border px-3 py-2">
             <option value="whisper" {% if values.provider == "whisper" %}selected{% endif %}>whisper</option>
             <option value="sensevoice" {% if values.provider == "sensevoice" %}selected{% endif %}>sensevoice</option>
+            <option value="funasr" {% if values.provider == "funasr" %}selected{% endif %}>funasr</option>
             <option value="volcengine" {% if values.provider == "volcengine" %}selected{% endif %}>volcengine</option>
           </select>
           <input name="model" value="{{ values.model }}" class="rounded border px-3 py-2">

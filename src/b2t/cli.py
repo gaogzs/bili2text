@@ -16,7 +16,7 @@ from b2t.factory import build_pipeline
 from b2t.i18n import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES, dependency_sync_guidance, resolve_language, tr
 from b2t.library import WorkspaceLibrary
 from b2t.tasks import TaskService
-from b2t.user_config import AppConfig
+from b2t.user_config import AppConfig, default_model_for_provider
 
 
 def create_app(language: str = DEFAULT_LANGUAGE) -> typer.Typer:
@@ -107,6 +107,13 @@ def create_app(language: str = DEFAULT_LANGUAGE) -> typer.Typer:
             rows.append((tr(selected_language, "doctor_whisper"), tr(selected_language, "status_ok")))
 
         try:
+            import funasr  # noqa: F401
+        except ImportError:
+            rows.append((tr(selected_language, "doctor_funasr"), tr(selected_language, "status_missing")))
+        else:
+            rows.append((tr(selected_language, "doctor_funasr"), tr(selected_language, "status_ok")))
+
+        try:
             import funasr_onnx  # noqa: F401
         except ImportError:
             rows.append((tr(selected_language, "doctor_sensevoice"), tr(selected_language, "status_missing")))
@@ -177,10 +184,10 @@ def create_app(language: str = DEFAULT_LANGUAGE) -> typer.Typer:
                 settings=Settings.from_workspace(selected_workspace or settings.workspace_root),
                 config=config,
                 provider=selected_provider or provider or config.default_provider,
-                model=selected_model or model or config.default_model,
+                model=selected_model or model or default_model_for_provider(config, selected_provider or provider or config.default_provider),
             ),
             default_provider=provider or config.default_provider,
-            default_model=model or config.default_model,
+            default_model=model or default_model_for_provider(config, provider or config.default_provider),
             default_workspace=settings.workspace_root,
             language=config.language,
         )
@@ -226,6 +233,12 @@ def _load_runtime(
         config.default_provider = provider
     if model:
         config.default_model = model
+    elif config.default_provider == "sensevoice":
+        config.default_model = config.sensevoice.model_dir or config.default_model
+    elif config.default_provider == "funasr":
+        config.default_model = config.funasr.model or config.default_model
+    elif config.default_provider == "volcengine":
+        config.default_model = config.volcengine.model_name or config.default_model
     return settings, config
 
 
@@ -255,7 +268,7 @@ def _run_server(*, host: str, port: int, provider: str | None, model: str | None
         library=service.library,
         database=service.database,
         default_provider=provider or config.default_provider,
-        default_model=model or config.default_model,
+        default_model=model or default_model_for_provider(config, provider or config.default_provider),
         language=config.language,
     )
     uvicorn.run(app_instance, host=host, port=port)
@@ -288,7 +301,7 @@ def _build_task_service(
             settings=settings,
             config=config,
             provider=selected_provider or provider or config.default_provider,
-            model=selected_model or model or config.default_model,
+            model=selected_model or model or default_model_for_provider(config, selected_provider or provider or config.default_provider),
         ),
     )
     service.ensure_indexed()

@@ -15,9 +15,9 @@ from b2t.user_config import AppConfig
 
 def test_collect_required_extras_combines_providers_and_features() -> None:
     assert collect_required_extras(
-        providers=["whisper", "volcengine"],
+        providers=["whisper", "funasr", "volcengine"],
         features=["web", "window"],
-    ) == ["whisper", "volcengine", "web"]
+    ) == ["whisper", "funasr", "volcengine", "web"]
 
 
 def test_collect_required_extras_excludes_window_extra() -> None:

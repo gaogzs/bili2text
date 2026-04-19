@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass, field
 from b2t.config import Settings
 from b2t.i18n import DEFAULT_LANGUAGE, normalize_language
 
-ALL_PROVIDERS = ("whisper", "sensevoice", "volcengine")
+ALL_PROVIDERS = ("whisper", "sensevoice", "funasr", "volcengine")
 ALL_FEATURES = ("web", "server", "window")
 
 
@@ -15,6 +15,15 @@ class SenseVoiceConfig:
     model_dir: str = ""
     language: str = "auto"
     use_itn: bool = True
+
+
+@dataclass(slots=True)
+class FunASRConfig:
+    model: str = "FunAudioLLM/Fun-ASR-Nano-2512"
+    language: str = "中文"
+    use_itn: bool = True
+    hub: str = "hf"
+    device: str = ""
 
 
 @dataclass(slots=True)
@@ -35,6 +44,7 @@ class AppConfig:
     default_provider: str = "whisper"
     default_model: str = "small"
     sensevoice: SenseVoiceConfig = field(default_factory=SenseVoiceConfig)
+    funasr: FunASRConfig = field(default_factory=FunASRConfig)
     volcengine: VolcengineConfig = field(default_factory=VolcengineConfig)
 
     @classmethod
@@ -55,6 +65,7 @@ class AppConfig:
             default_provider=data.get("default_provider", "whisper"),
             default_model=data.get("default_model", "small"),
             sensevoice=SenseVoiceConfig(**data.get("sensevoice", {})),
+            funasr=FunASRConfig(**data.get("funasr", {})),
             volcengine=VolcengineConfig(**data.get("volcengine", {})),
         )
 
@@ -64,3 +75,14 @@ class AppConfig:
             json.dumps(asdict(self), ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+
+
+def default_model_for_provider(config: AppConfig, provider: str) -> str:
+    selected_provider = provider.strip().lower()
+    if selected_provider == "sensevoice":
+        return config.sensevoice.model_dir or config.default_model or "small"
+    if selected_provider == "funasr":
+        return config.funasr.model or config.default_model or "small"
+    if selected_provider == "volcengine":
+        return config.volcengine.model_name or config.default_model or "small"
+    return config.default_model or "small"

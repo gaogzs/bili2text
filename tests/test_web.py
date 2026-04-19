@@ -64,6 +64,7 @@ def test_index_page_renders_form_and_video_list(tmp_path: Path) -> None:
     assert response.status_code == 200
     assert "Bilibili 视频转文字" in response.text
     assert 'value="sensevoice"' in response.text
+    assert 'value="funasr"' in response.text
     assert "Videos" in response.text
 
 

@@ -67,7 +67,7 @@ class WindowApp:
         provider_box = ttk.Combobox(
             top,
             textvariable=self.provider_var,
-            values=["whisper", "sensevoice", "volcengine"],
+            values=["whisper", "sensevoice", "funasr", "volcengine"],
             state="readonly",
         )
         provider_box.grid(row=1, column=1, sticky="ew", padx=(8, 16), pady=(10, 0))

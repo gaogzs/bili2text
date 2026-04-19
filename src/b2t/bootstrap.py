@@ -160,6 +160,11 @@ def run_bootstrap(*, settings: Settings, interactive: bool = True) -> AppConfig:
             "enabled": "sensevoice" in config.enabled_providers,
         },
         {
+            "name": f"funasr     — {tr(lang, 'provider_funasr_short')}",
+            "value": "funasr",
+            "enabled": "funasr" in config.enabled_providers,
+        },
+        {
             "name": f"volcengine — {tr(lang, 'provider_volcengine_short')}",
             "value": "volcengine",
             "enabled": "volcengine" in config.enabled_providers,
@@ -199,7 +204,7 @@ def run_bootstrap(*, settings: Settings, interactive: bool = True) -> AppConfig:
     ).execute()
 
     # ── 4. Configure each selected provider ──────────────────
-    selected_whisper_model: str | None = None
+    selected_provider_models: dict[str, str] = {}
     for provider in selected_providers:
         console.print()
         console.rule(f"[bold cyan]{tr(lang, f'provider_{provider}_name')}[/bold cyan]")
@@ -207,9 +212,11 @@ def run_bootstrap(*, settings: Settings, interactive: bool = True) -> AppConfig:
         console.print()
 
         if provider == "whisper":
-            selected_whisper_model = _configure_whisper(config, lang)
+            selected_provider_models[provider] = _configure_whisper(config, lang)
         elif provider == "sensevoice":
             _configure_sensevoice(config, lang)
+        elif provider == "funasr":
+            selected_provider_models[provider] = _configure_funasr(config, lang)
         elif provider == "volcengine":
             _configure_volcengine(config, lang)
 
@@ -228,8 +235,15 @@ def run_bootstrap(*, settings: Settings, interactive: bool = True) -> AppConfig:
             choices=default_choices,
             default=config.default_provider if config.default_provider in selected_providers else selected_providers[0],
         ).execute()
-    if config.default_provider == "whisper" and selected_whisper_model:
-        config.default_model = selected_whisper_model
+    default_model = selected_provider_models.get(config.default_provider)
+    if default_model:
+        config.default_model = default_model
+    elif config.default_provider == "sensevoice":
+        config.default_model = config.sensevoice.model_dir
+    elif config.default_provider == "funasr":
+        config.default_model = config.funasr.model
+    elif config.default_provider == "volcengine":
+        config.default_model = config.volcengine.model_name
 
     # ── Save and show next steps ─────────────────────────────
     config.save(settings)
@@ -295,6 +309,27 @@ def _configure_sensevoice(config: AppConfig, lang: str) -> None:
         message=tr(lang, "bootstrap_sensevoice_itn_prompt"),
         default=config.sensevoice.use_itn,
     ).execute()
+
+
+def _configure_funasr(config: AppConfig, lang: str) -> str:
+    config.funasr.model = inquirer.text(
+        message=tr(lang, "bootstrap_funasr_model_prompt"),
+        default=config.funasr.model,
+    ).execute().strip()
+    config.funasr.language = inquirer.select(
+        message=tr(lang, "bootstrap_funasr_lang_prompt"),
+        choices=[
+            {"name": "中文", "value": "中文"},
+            {"name": "English", "value": "English"},
+            {"name": "日本語", "value": "日本語"},
+        ],
+        default=config.funasr.language,
+    ).execute()
+    config.funasr.use_itn = inquirer.confirm(
+        message=tr(lang, "bootstrap_funasr_itn_prompt"),
+        default=config.funasr.use_itn,
+    ).execute()
+    return config.funasr.model
 
 
 def _configure_volcengine(config: AppConfig, lang: str) -> None:
